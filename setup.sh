@@ -15,11 +15,11 @@ sudo passwd "$NEWUSER"
 
 sudo timedatectl set-timezone "$NEWTIMEZONE"
 
-sudo sed -i "s/#host-name=foo/domain-name=$NEWHOST/g" /etc/avahi/avahi-daemon.conf
+sudo sed -i.bak "s/#host-name=foo/host-name=$NEWHOST/g" /etc/avahi/avahi-daemon.conf
 sudo sed -i "s/#domain-name=local/domain-name=$NEWDOMAIN/g" /etc/avahi/avahi-daemon.conf
 
 sudo apt update && sudo apt -y upgrade
-sudo apt -y install tmux vim zsh stow git 
+sudo apt -y install tmux vim zsh stow git uptimed
 
 sudo usermod -s $(which zsh) "$NEWUSER"
 
