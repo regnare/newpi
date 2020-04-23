@@ -24,4 +24,4 @@ sudo apt -y install tmux vim zsh stow git
 echo "Adding new user $NEWUSER"
 sudo useradd -m -s $(which zsh) -G users,sudo,adm "$NEWUSER"
 echo "Please set the password now."
-sudo passwd "NEWUSER"
+sudo passwd "$NEWUSER"
