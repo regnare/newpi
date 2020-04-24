@@ -24,14 +24,8 @@ echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
 sudo systemctl disable hciuart
 sudo systemctl disable wpa_supplicant
 
-# disable ipv6
-echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
-
-echo "iptables-persistent iptables-persistent/autosave_v4 boolean true" | sudo debconf-set-selections
-echo "iptables-persistent iptables-persistent/autosave_v6 boolean true" | sudo debconf-set-selections
-
 sudo apt update && sudo apt -y upgrade
-sudo apt -y install tmux vim zsh stow git uptimed iptables-persistent
+sudo apt -y install tmux vim zsh stow git uptimed nftables
 
 sudo usermod -s $(which zsh) "$NEWUSER"
 
