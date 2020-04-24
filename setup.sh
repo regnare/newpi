@@ -26,6 +26,7 @@ sudo systemctl disable wpa_supplicant
 
 sudo apt update && sudo apt -y upgrade
 sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades
+sudo apt -y purge iptables
 
 sudo usermod -s $(which zsh) "$NEWUSER"
 
