@@ -19,7 +19,7 @@ sudo sed -i.bak "s/#host-name=foo/host-name=$NEWHOST/g" /etc/avahi/avahi-daemon.
 sudo sed -i "s/#domain-name=local/domain-name=$NEWDOMAIN/g" /etc/avahi/avahi-daemon.conf
 
 sudo apt update && sudo apt -y upgrade
-sudo apt -y install tmux vim zsh stow git uptimed
+sudo apt -y install tmux vim zsh stow git uptimed iptables-persistent
 
 sudo usermod -s $(which zsh) "$NEWUSER"
 
