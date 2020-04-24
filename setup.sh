@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NEWHOST="newhostname"
+NEWHOST="farside"
 NEWDOMAIN="lan"
 NEWUSER="ben"
 
@@ -25,7 +25,7 @@ sudo systemctl disable hciuart
 sudo systemctl disable wpa_supplicant
 
 sudo apt update && sudo apt -y upgrade
-sudo apt -y install tmux vim zsh stow git uptimed nftables
+sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades
 
 sudo usermod -s $(which zsh) "$NEWUSER"
 
