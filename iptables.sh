@@ -1,16 +1,12 @@
 iptables -F
 
-iptables -P INPUT ACCEPT
-iptables -P FORWARD ACCEPT
-iptables -P OUTPUT ACCEPT
-
 # Input table
 iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
 iptables -A INPUT -i lo -j ACCEPT
 
 # Drop broadcast spam
 iptables -A INPUT -m addrtype --dst-type BROADCAST -j DROP
-iptables -A INPUT -p udp --sport 5353 --dport 5353 -m addrtype --dst-type MULTICAST -j ACCEPT
+iptables -A INPUT -p udp --dport 5353 -m addrtype --dst-type MULTICAST -j ACCEPT
 
 # Log and allow pings
 iptables -A INPUT -p icmp --icmp-type echo-request -j LOG --log-prefix "ALLOW PING: " --log-level info
