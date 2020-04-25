@@ -24,6 +24,9 @@ echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
 sudo systemctl disable hciuart
 sudo systemctl disable wpa_supplicant
 
+# disable ipv6
+echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
+
 sudo apt update && sudo apt -y upgrade
 sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades
 sudo apt -y purge iptables
