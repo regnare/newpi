@@ -39,6 +39,28 @@ sudo apt update && sudo apt -y upgrade
 sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet
 sudo apt -y purge iptables
 
+# setup unattended upgrades
+UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
+sudo tee "$UNATTEND_POLICY" <<'EOF'
+Unattended-Upgrade::Origins-Pattern {
+  "origin=Raspbian,codename=${distro_codename},label=Raspbian";
+  "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+};
+Unattended-Upgrade::Package-Blacklist {
+};
+Unattended-Upgrade::Automatic-Reboot True;
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
+EOF
+
+AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
+sudo tee "$AUTO_UPGRADES" <<EOF
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+EOF
+
+
 # setup motd with a banner of the hostname.
 toilet -f mono9 -F gay "$NEWHOST" | sudo tee /etc/motd
 
