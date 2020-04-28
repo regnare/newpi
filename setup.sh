@@ -104,3 +104,5 @@ EOF
 
   echo "Time to 'reboot'."
 }
+
+main "$@"
