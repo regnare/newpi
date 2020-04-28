@@ -1,46 +1,77 @@
 #!/bin/bash
 
-NEWHOST="farside"
 NEWDOMAIN="lan"
-NEWUSER="ben"
-
 NEWLOCALE="en_US.UTF-8"
 NEWLAYOUT="us"
 NEWTIMEZONE="US/Eastern"
 AVAHI_CONFIG="/etc/avahi/avahi-daemon.conf"
+UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
+AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
 
-# Setup new user. I do it here first in case I decided
-# to run this script with "&& sudo reboot", that way
-# I don't have to wait until the end to setup the password.
-echo "Adding new user $NEWUSER"
-sudo useradd -m -G users,sudo,adm "$NEWUSER"
-echo "Please set the password now."
-sudo passwd "$NEWUSER"
+function usage() {
+  echo "Usage: $0"
+  echo "  -h: The new hostname"
+  echo "  -u: The new username"
+  exit 1
+}
 
-# Update timezone
-sudo timedatectl set-timezone "$NEWTIMEZONE"
+function main() {
+  while getopts ":u:h:" args; do
+    case "${args}" in
+      u) NEWUSER="${OPTARG}";;
+      h) NEWHOST="${OPTARG}";;
+      *) usage;;
+    esac
+  done
 
-# configure avahi-daemon to use new hostname for mDNS
-sudo sed -i.bak "s/.*host-name=.*/host-name=$NEWHOST/g" "$AVAHI_CONFIG"
-sudo sed -i "s/.*domain-name=.*/domain-name=$NEWDOMAIN/g" "$AVAHI_CONFIG"
-sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
+  if [[ -z $NEWUSER || -z $NEWHOST ]]; then usage; fi
 
-# disable bluetooth and wifi
-echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
-echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
-sudo systemctl disable hciuart
-sudo systemctl disable wpa_supplicant
+  echo "========================================"
+  echo "You've selected the following options:"
+  echo "User: $NEWUSER (default password is: changeme)"
+  echo "Hostname: $NEWHOST"
+  echo "========================================"
 
-# disable ipv6
-echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
+  read -p "Continue with setup? (y/N)" choice
+  case "$choice" in
+    y|Y) echo "Ok, here we go..."; configure;;
+    *)   echo "Setup aborted."; exit 2;;
+  esac
+}
 
-# install updates and my common packages.
-sudo apt update && sudo apt -y upgrade
-sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet
-sudo apt -y purge iptables
+function configure() { 
+  # Setup new user.
+  echo "Adding new user $NEWUSER"
+  sudo useradd -m -G users,sudo,adm "$NEWUSER"
+  # set default password
+  echo "$NEWUSER:changeme" | sudo chpasswd
+  # force the password to expired, requiring that it's changed on next login.
+  sudo passwd -e "$NEWUSER"
+
+  # Update timezone
+  sudo timedatectl set-timezone "$NEWTIMEZONE"
+
+  # configure avahi-daemon to use new hostname for mDNS
+  sudo sed -i.bak "s/.*host-name=.*/host-name=$NEWHOST/g" "$AVAHI_CONFIG"
+  sudo sed -i "s/.*domain-name=.*/domain-name=$NEWDOMAIN/g" "$AVAHI_CONFIG"
+  sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
+
+  # disable bluetooth and wifi
+  echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
+  echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
+  sudo systemctl disable hciuart
+  sudo systemctl disable wpa_supplicant
+
+  # disable ipv6
+  echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
+
+  # install updates and my common packages.
+  sudo apt update && sudo apt -y upgrade
+  sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet
+  sudo apt -y purge iptables
 
 # setup unattended upgrades
-UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
+# unidented on purpose for heredoc formatting.
 sudo tee "$UNATTEND_POLICY" <<'EOF'
 Unattended-Upgrade::Origins-Pattern {
   "origin=Raspbian,codename=${distro_codename},label=Raspbian";
@@ -54,23 +85,22 @@ Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
 EOF
 
-AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
 sudo tee "$AUTO_UPGRADES" <<EOF
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 EOF
 
+  # setup motd with a banner of the hostname.
+  toilet -f mono9 -F gay "$NEWHOST" | sudo tee /etc/motd
 
-# setup motd with a banner of the hostname.
-toilet -f mono9 -F gay "$NEWHOST" | sudo tee /etc/motd
+  # Update user shell as zsh
+  sudo usermod -s $(which zsh) "$NEWUSER"
 
-# Update user shell as zsh
-sudo usermod -s $(which zsh) "$NEWUSER"
+  # configure the locale settings
+  sudo raspi-config nonint do_hostname "$NEWHOST"
+  sudo raspi-config nonint do_configure_keyboard "$NEWLAYOUT"
+  sudo raspi-config nonint do_wifi_country "$NEWLAYOUT"
+  sudo raspi-config nonint do_change_locale "$NEWLOCALE"
 
-# configure the locale settings
-sudo raspi-config nonint do_hostname "$NEWHOST"
-sudo raspi-config nonint do_configure_keyboard "$NEWLAYOUT"
-sudo raspi-config nonint do_wifi_country "$NEWLAYOUT"
-sudo raspi-config nonint do_change_locale "$NEWLOCALE"
-
-echo "Time to 'reboot'."
+  echo "Time to 'reboot'."
+}
