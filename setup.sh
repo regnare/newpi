@@ -71,7 +71,7 @@ function configure() {
   sudo apt -y purge iptables
 
 # setup unattended upgrades
-# unidented on purpose for heredoc formatting.
+# unindented on purpose for heredoc formatting.
 sudo tee "$UNATTEND_POLICY" <<'EOF'
 Unattended-Upgrade::Origins-Pattern {
   "origin=Raspbian,codename=${distro_codename},label=Raspbian";
