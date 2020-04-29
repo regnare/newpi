@@ -79,7 +79,7 @@ Unattended-Upgrade::Origins-Pattern {
 };
 Unattended-Upgrade::Package-Blacklist {
 };
-Unattended-Upgrade::Automatic-Reboot True;
+Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Automatic-Reboot "true";
 Unattended-Upgrade::Automatic-Reboot-WithUsers "false";
