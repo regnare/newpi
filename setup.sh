@@ -63,7 +63,7 @@ function configure() {
   sudo systemctl disable wpa_supplicant
 
   # disable ipv6
-  echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
+  echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/no-ipv6.conf
 
   # install updates and my common packages.
   sudo apt update && sudo apt -y upgrade
