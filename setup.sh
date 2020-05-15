@@ -7,19 +7,22 @@ NEWTIMEZONE="US/Eastern"
 AVAHI_CONFIG="/etc/avahi/avahi-daemon.conf"
 UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
 AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
+WIFI="false"
 
 function usage() {
   echo "Usage: $0"
-  echo "  -h: The new hostname"
-  echo "  -u: The new username"
+  echo "  -h: [string] The new hostname"
+  echo "  -u: [string] The new username"
+  echo "  -w: To enable wifi adapter"
   exit 1
 }
 
 function main() {
-  while getopts ":u:h:" args; do
+  while getopts ":u:h:w" args; do
     case "${args}" in
       u) NEWUSER="${OPTARG}";;
       h) NEWHOST="${OPTARG}";;
+      w) WIFI="true";;
       *) usage;;
     esac
   done
@@ -30,6 +33,7 @@ function main() {
   echo "You've selected the following options:"
   echo "User: $NEWUSER (default password is: changeme)"
   echo "Hostname: $NEWHOST"
+  echo "WiFi Enabled: $WIFI"
   echo "========================================"
 
   read -p "Continue with setup? (y/N)" choice
@@ -57,10 +61,12 @@ function configure() {
   sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
 
   # disable bluetooth and wifi
-  echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
-  echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
-  sudo systemctl disable hciuart
-  sudo systemctl disable wpa_supplicant
+  if ! $WIFI; then
+    echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
+    echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
+    sudo systemctl disable hciuart
+    sudo systemctl disable wpa_supplicant
+  fi
 
   # disable ipv6
   echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/no-ipv6.conf
