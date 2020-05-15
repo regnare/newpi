@@ -117,6 +117,9 @@ EOF
 
   # Update user shell as zsh
   sudo usermod -s $(which zsh) "$NEWUSER"
+  
+  # Configure nftables
+  source ./config-nft.sh
 
   # configure the locale settings
   sudo raspi-config nonint do_hostname "$NEWHOST"
