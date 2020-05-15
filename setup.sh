@@ -7,7 +7,10 @@ NEWTIMEZONE="US/Eastern"
 AVAHI_CONFIG="/etc/avahi/avahi-daemon.conf"
 UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
 AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
+WIFI_CONFIG="/etc/wpa_supplicant/wpa_supplicant.conf"
 WIFI="false"
+SSID=""
+WIFI_PASSPHRASE=""
 
 function usage() {
   echo "Usage: $0"
@@ -28,12 +31,20 @@ function main() {
   done
 
   if [[ -z $NEWUSER || -z $NEWHOST ]]; then usage; fi
+  if $WIFI; then
+    read -p "SSID: " SSID
+    read -s -p "Passphrase:" WIFI_PASSPHRASE
+  fi
 
   echo "========================================"
   echo "You've selected the following options:"
   echo "User: $NEWUSER (default password is: changeme)"
   echo "Hostname: $NEWHOST"
   echo "WiFi Enabled: $WIFI"
+  if $WIFI; then
+    echo "SSID: $SSID"
+    echo "Passphrase: $WIFI_PASSPHRASE"
+  fi
   echo "========================================"
 
   read -p "Continue with setup? (y/N)" choice
@@ -61,7 +72,12 @@ function configure() {
   sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
 
   # disable bluetooth and wifi
-  if ! $WIFI; then
+  if $WIFI; then
+    echo "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev" | sudo tee "$WIFI_CONFIG"
+    echo "update_config=1" | sudo tee -a "$WIFI_CONFIG"
+    echo "country=$NEWLAYOUT" | sudo tee -a "$WIFI_CONFIG"
+    wpa_passphrase "$SSID" "$WIFI_PASSPHRASE" | sed '/\s*#/d' | sudo tee -a "$WIFI_CONFIG"
+  else
     echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
     echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
     sudo systemctl disable hciuart
