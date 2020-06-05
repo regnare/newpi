@@ -8,6 +8,7 @@ AVAHI_CONFIG="/etc/avahi/avahi-daemon.conf"
 UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
 AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
 WIFI_CONFIG="/etc/wpa_supplicant/wpa_supplicant.conf"
+SSH_KEY_FILE="regnare.pub"
 WIFI="false"
 SSID=""
 WIFI_PASSPHRASE=""
@@ -62,6 +63,12 @@ function configure() {
   echo "$NEWUSER:changeme" | sudo chpasswd
   # force the password to expired, requiring that it's changed on next login.
   sudo passwd -e "$NEWUSER"
+  
+  # Setup pub ssh key
+  sudo mkdir -p /home/"$NEWUSER"/.ssh
+  sudo cp "$SSH_KEY_FILE" /home/"$NEWUSER"/.ssh/authorized_keys
+  sudo chown "$NEWUSER":"$NEWUSER" /home/"$NEWUSER"/.ssh/authorized_keys
+  sudo chmod 600 /home/"$NEWUSER"/.ssh/authorized_keys
 
   # Update timezone
   sudo timedatectl set-timezone "$NEWTIMEZONE"
