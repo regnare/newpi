@@ -102,6 +102,9 @@ EOF
   sudo raspi-config nonint do_wifi_country "$NEWLAYOUT"
   sudo raspi-config nonint do_change_locale "$NEWLOCALE"
 
+  # Set vim as default editor
+  sudo update-alternatives --set editor /usr/bin/vim.basic
+
   echo "Time to 'reboot'."
 }
 
