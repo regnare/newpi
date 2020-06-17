@@ -7,29 +7,45 @@ NEWTIMEZONE="US/Eastern"
 AVAHI_CONFIG="/etc/avahi/avahi-daemon.conf"
 UNATTEND_POLICY="/etc/apt/apt.conf.d/50unattended-upgrades"
 AUTO_UPGRADES="/etc/apt/apt.conf.d/20auto-upgrades"
+WIFI_CONFIG="/etc/wpa_supplicant/wpa_supplicant.conf"
+SSH_KEY_FILE="regnare.pub"
+WIFI="false"
+SSID=""
+WIFI_PASSPHRASE=""
 
 function usage() {
   echo "Usage: $0"
-  echo "  -h: The new hostname"
-  echo "  -u: The new username"
+  echo "  -h: [string] The new hostname"
+  echo "  -u: [string] The new username"
+  echo "  -w: To enable wifi adapter"
   exit 1
 }
 
 function main() {
-  while getopts ":u:h:" args; do
+  while getopts ":u:h:w" args; do
     case "${args}" in
       u) NEWUSER="${OPTARG}";;
       h) NEWHOST="${OPTARG}";;
+      w) WIFI="true";;
       *) usage;;
     esac
   done
 
   if [[ -z $NEWUSER || -z $NEWHOST ]]; then usage; fi
+  if $WIFI; then
+    read -p "SSID: " SSID
+    read -s -p "Passphrase:" WIFI_PASSPHRASE
+  fi
 
   echo "========================================"
   echo "You've selected the following options:"
   echo "User: $NEWUSER (default password is: changeme)"
   echo "Hostname: $NEWHOST"
+  echo "WiFi Enabled: $WIFI"
+  if $WIFI; then
+    echo "SSID: $SSID"
+    echo "Passphrase: $WIFI_PASSPHRASE"
+  fi
   echo "========================================"
 
   read -p "Continue with setup? (y/N)" choice
@@ -47,6 +63,12 @@ function configure() {
   echo "$NEWUSER:changeme" | sudo chpasswd
   # force the password to expired, requiring that it's changed on next login.
   sudo passwd -e "$NEWUSER"
+  
+  # Setup pub ssh key
+  sudo mkdir -p /home/"$NEWUSER"/.ssh
+  sudo cp "$SSH_KEY_FILE" /home/"$NEWUSER"/.ssh/authorized_keys
+  sudo chown "$NEWUSER":"$NEWUSER" /home/"$NEWUSER"/.ssh/authorized_keys
+  sudo chmod 600 /home/"$NEWUSER"/.ssh/authorized_keys
 
   # Update timezone
   sudo timedatectl set-timezone "$NEWTIMEZONE"
@@ -57,17 +79,24 @@ function configure() {
   sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
 
   # disable bluetooth and wifi
-  echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
-  echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
-  sudo systemctl disable hciuart
-  sudo systemctl disable wpa_supplicant
+  if $WIFI; then
+    echo "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev" | sudo tee "$WIFI_CONFIG"
+    echo "update_config=1" | sudo tee -a "$WIFI_CONFIG"
+    echo "country=$NEWLAYOUT" | sudo tee -a "$WIFI_CONFIG"
+    wpa_passphrase "$SSID" "$WIFI_PASSPHRASE" | sed '/\s*#/d' | sudo tee -a "$WIFI_CONFIG"
+  else
+    echo "dtoverlay=pi3-disable-wifi" | sudo tee -a /boot/config.txt
+    echo "dtoverlay=pi3-disable-bt" | sudo tee -a /boot/config.txt
+    sudo systemctl disable hciuart
+    sudo systemctl disable wpa_supplicant
+  fi
 
   # disable ipv6
-  echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/custom.conf
+  echo "net.ipv6.conf.all.disable_ipv6 = 1" | sudo tee /etc/sysctl.d/no-ipv6.conf
 
   # install updates and my common packages.
   sudo apt update && sudo apt -y upgrade
-  sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet
+  sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet xclip
   sudo apt -y purge iptables
 
 # setup unattended upgrades
@@ -95,6 +124,9 @@ EOF
 
   # Update user shell as zsh
   sudo usermod -s $(which zsh) "$NEWUSER"
+  
+  # Configure nftables
+  source ./config-nft.sh
 
   # configure the locale settings
   sudo raspi-config nonint do_hostname "$NEWHOST"
