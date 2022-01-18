@@ -77,7 +77,7 @@ function configure() {
   sudo sed -i.bak "s/.*host-name=.*/host-name=$NEWHOST/g" "$AVAHI_CONFIG"
   sudo sed -i "s/.*domain-name=.*/domain-name=$NEWDOMAIN/g" "$AVAHI_CONFIG"
   sudo sed -i "s/.*disable-publishing=.*/publish-domain=no/g" "$AVAHI_CONFIG"
-
+  
   # disable bluetooth and wifi
   if $WIFI; then
     echo "ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev" | sudo tee "$WIFI_CONFIG"
@@ -96,8 +96,7 @@ function configure() {
 
   # install updates and my common packages.
   sudo apt update && sudo apt -y upgrade
-  sudo apt -y install tmux vim zsh stow git uptimed nftables unattended-upgrades toilet xclip
-  sudo apt -y purge iptables
+  sudo apt -y install tmux vim zsh stow git uptimed ufw unattended-upgrades toilet xclip
 
 # setup unattended upgrades
 # unindented on purpose for heredoc formatting.
@@ -125,8 +124,13 @@ EOF
   # Update user shell as zsh
   sudo usermod -s $(which zsh) "$NEWUSER"
   
-  # Configure nftables
-  source ./config-nft.sh
+  # Configure UFW
+  sudo sed -i.bak "s/.*IPV6=.*/IPV6=no/g" /etc/default/ufw
+  sudo ufw default deny incoming
+  sudo ufw default allow outgoing
+  sudo ufw allow ssh
+  sudo ufw show added
+  sudo ufw enable
 
   # configure the locale settings
   sudo raspi-config nonint do_hostname "$NEWHOST"
