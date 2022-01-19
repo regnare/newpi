@@ -130,7 +130,7 @@ EOF
   sudo ufw default allow outgoing
   sudo ufw allow ssh
   sudo ufw show added
-  sudo ufw enable
+  yes | sudo ufw enable
 
   # configure the locale settings
   sudo raspi-config nonint do_hostname "$NEWHOST"
