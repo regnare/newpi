@@ -96,7 +96,7 @@ function configure() {
 
   # install updates and my common packages.
   sudo apt update && sudo apt -y upgrade
-  sudo apt -y install tmux vim zsh stow git uptimed ufw unattended-upgrades toilet xclip
+  sudo apt -y install tmux vim zsh stow git uptimed ufw unattended-upgrades toilet xclip fzf
 
 # setup unattended upgrades
 # unindented on purpose for heredoc formatting.
